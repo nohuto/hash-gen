@@ -69,7 +69,7 @@ SHA512("")
 
 `Add-CM.ps1` will add a `Generate Hash` option to the context menu of any file/folder (if selecting a folder all files within the folder will get used):
 
-![](https://github.com/5Noxi/HashGen/blob/main/images/contextmenu.png?raw=true)
+![](https://github.com/nohuto/HashGen/blob/main/images/contextmenu.png?raw=true)
 
 > [!NOTE]
 > `HashGen.ps1` has to be in your `Downloads` folder
