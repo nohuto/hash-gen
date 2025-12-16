@@ -17,8 +17,6 @@ $extended = "HashGen.ContextMenu"
 $shell = Join-Path "HKCU:\Software\Classes\$extended" "shell"
 
 foreach ($old in @(
-        "HKCU:\Software\Classes\*\shell\NV-Hash",
-        "HKCU:\Software\Classes\Directory\shell\NV-Hash",
         "HKCU:\Software\Classes\*\shell\Hashes",
         "HKCU:\Software\Classes\Directory\shell\Hashes",
         "HKCU:\Software\Classes\$extended"
