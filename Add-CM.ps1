@@ -1,35 +1,60 @@
 $nvfolder  = "$env:localappdata\Noverse"
-$gen = "$env:localappdata\Noverse\HashGen.ps1"
-New-Item -ItemType Directory -Path $nvfolder -Force | Out-Null
-Move-Item -Path "$home\Downloads\HashGen.ps1" -Destination $gen -Force
+$gen = Join-Path $nvfolder "HashGen.ps1"
+$local = Join-Path $home "Downloads\HashGen.ps1"
+if (!(Test-Path $nvfolder)) { New-Item -ItemType Directory -Path $nvfolder -Force | Out-Null }
 
-Write-Host " Enable sleep at the end?" -NoNew
-Write-Host " [Y/N]" -ForegroundColor DarkGray
-Write-Host " >> " -foregroundcolor blue -NoNewline
-$sleep = Read-Host
-if ($sleep -match 'Y') {
-    echo ""
-    Write-Host " Time in seconds:"
-    Write-Host " >> " -foregroundcolor blue -NoNewline
-    $seconds = Read-Host
-    $param = "-sleep -seconds $seconds"
+if (Test-Path -LiteralPath $local) {
+    Move-Item -LiteralPath $local -Destination $gen -Force
+} else {
+    try {
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nohuto/HashGen/main/HashGen.ps1" -OutFile $gen -UseBasicParsing
+    } catch {
+        throw "Failed to download HashGen.ps1: $($_.Exception.Message)"
+    }
 }
 
-$cmd = ('powershell -file "{0}" -nvstringin "%1" {1}' -f $gen, $param)
+$extended = "HashGen.ContextMenu"
+$shell = Join-Path "HKCU:\Software\Classes\$extended" "shell"
 
-$filecontext = "HKCU:\Software\Classes\*\shell\NV-Hash"
-$filecmd = "HKCU:\Software\Classes\*\shell\NV-Hash\command"
-$foldercontext = "HKCU:\Software\Classes\Directory\shell\NV-Hash"
-$foldercmd = "HKCU:\Software\Classes\Directory\shell\NV-Hash\command"
+foreach ($old in @(
+        "HKCU:\Software\Classes\*\shell\NV-Hash",
+        "HKCU:\Software\Classes\Directory\shell\NV-Hash",
+        "HKCU:\Software\Classes\*\shell\Hashes",
+        "HKCU:\Software\Classes\Directory\shell\Hashes",
+        "HKCU:\Software\Classes\$extended"
+    )) {
+    if (Test-Path -LiteralPath $old) {
+        Remove-Item -LiteralPath $old -Recurse -Force
+    }
+}
 
-if (!(Test-Path $filecontext)) {New-Item -Path $filecontext -Force | Out-Null}
-Set-ItemProperty -Path $filecontext -Name "(Default)" -Value "Generate Hashes"
+New-Item -Path $shell -Force | Out-Null
 
-if (!(Test-Path $filecmd)) {New-Item -Path $filecmd -Force | Out-Null}
-Set-ItemProperty -Path $filecmd -Name "(Default)" -Value $cmd
+foreach ($entry in @(
+        @{Key='All'; Label='All Hashes'; Argument='All'},
+        @{Key='MD5'; Label='MD5'; Argument='MD5'},
+        @{Key='SHA1'; Label='SHA1'; Argument='SHA1'},
+        @{Key='SHA256'; Label='SHA256'; Argument='SHA256'},
+        @{Key='SHA384'; Label='SHA384'; Argument='SHA384'},
+        @{Key='SHA512'; Label='SHA512'; Argument='SHA512'},
+        @{Key='MACTripleDES'; Label='MACTripleDES'; Argument='MACTripleDES'},
+        @{Key='RIPEMD160'; Label='RIPEMD160'; Argument='RIPEMD160'}
+    )) {
+    $entry = Join-Path $shell $entry.Key
+    New-Item -Path $entry -Force | Out-Null
+    Set-ItemProperty -LiteralPath $entry -Name "MUIVerb" -Value $entry.Label
 
-if (!(Test-Path $foldercontext)) {New-Item -Path $foldercontext -Force | Out-Null}
-Set-ItemProperty -Path $foldercontext -Name "(Default)" -Value "Generate Hashes"
+    $cmdPath = Join-Path $entry "command"
+    New-Item -Path $cmdPath -Force | Out-Null
+    $command = ('powershell -NoExit -file "{0}" -nvstringin "%1" -Algorithm {1}' -f $gen, $entry.Argument)
+    Set-ItemProperty -LiteralPath $cmdPath -Name "(Default)" -Value $command
+}
 
-if (!(Test-Path $foldercmd)) {New-Item -Path $foldercmd -Force | Out-Null}
-Set-ItemProperty -Path $foldercmd -Name "(Default)" -Value $cmd
+foreach ($menu in @(
+        "HKCU:\Software\Classes\*\shell\Hashes",
+        "HKCU:\Software\Classes\Directory\shell\Hashes"
+    )) {
+    New-Item -Path $menu -Force | Out-Null
+    Set-ItemProperty -LiteralPath $menu -Name "MUIVerb" -Value "Hashes"
+    Set-ItemProperty -LiteralPath $menu -Name "ExtendedSubCommandsKey" -Value $extended
+}

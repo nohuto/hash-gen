@@ -5,25 +5,21 @@
 The purpose of hash values is to provide a cryptographically-secure way to verify that the contents of a file have not been changed. While some hash algorithms, including MD5 and SHA1, are no longer considered secure against attack, the goal of a secure hash algorithm is to render it impossible to change the contents of a file -- either by accident, or by malicious or unauthorized attempt -- and maintain the same hash value. You can also use hash values to determine if two different files have exactly the same content. If the hash values of two files are identical, the contents of the files are also identical."
 > [Get-FileHash | microsoft.powershell.utility](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-filehash?view=powershell-7.5)
 
-I decided to use the `Get-FileHash` cmdlet as creating the generator with the cmdlet was slightly faster than using the `HashAlgorithm class`:
-```ps
-# Measured using System.Diagnostics.Stopwatch
-0.1626268 seconds # Get-FileHash
-0.2177895 seconds # HashAlgorithm Class
-```
-`Get-FileHash -Algorithm` accepts:
+`Get-FileHash -Algorithm` accepts (the script uses the built in .NET hash implementations `System.Security.Cryptography`):
 - [`MD5`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.md5?view=net-9.0) (`128` Bits)
 - [`SHA1`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha1?view=net-9.0) (`160` Bits)
 - [`SHA256`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha256?view=net-9.0) (`256` Bits)
 - [`SHA384`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha384?view=net-9.0) (`384` Bits)
 - [`SHA512`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha512?view=net-9.0) (`512` Bits)
+- [`MACTripleDES`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.mactripledes?view=net-9.0)
+- [`RIPEMD160`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.ripemd160?view=net-9.0)
 
-Preview using `sleep` & `seconds = 3`:
+Preview (window stays open until you close it):
 
 https://github.com/user-attachments/assets/431b9d0e-c8d1-414d-8eaf-581924cbaa7f
 
 The computed hash depends on the file content, e.g. empty files have the same hash (which means that every change affects the hash - [Avalanche effect](https://en.wikipedia.org/wiki/Avalanche_effect)):
-```ps
+```powershell
 # Scenario 1 (no content)
 PS C:\Users\Nohuxi> Get-Content -LiteralPath 'C:\Users\Nohuxi\Desktop\Noverse0.txt' -Raw
 PS C:\Users\Nohuxi> # No output, since empty
@@ -49,7 +45,7 @@ SHA512: 4DFF4EA340F0A823F15D3F4F01AB62EAE0E5DA579CCB851F8DB9DFE84C58B2B37B89903A
 ```
 As you can see, adding a `1` to the file content has completely changed the hash values. You can try this yourself by editing the paths.
 
-```ps
+```powershell
 MD5("") 
 0x d41d8cd98f00b204e9800998ecf8427e
 SHA1("")
@@ -67,24 +63,27 @@ SHA512("")
 
 ## Installation
 
-`Add-CM.ps1` will add a `Generate Hash` option to the context menu of any file/folder (if selecting a folder all files within the folder will get used):
+`HashGen.ps1` accepts an optional `-Algorithm` parameter (`All`, `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `MACTripleDES`, `RIPEMD160`).  
+By default it runs every available algorithm, but you can target a specific hash when invoking it manually.
 
-![](https://github.com/nohuto/HashGen/blob/main/images/contextmenu.png?raw=true)
+`Add-CM.ps1` will add a `Hashes` cascaded option to the context menu of any file/folder (if selecting a folder all files within the folder and every subfolder will get used):
 
-> [!NOTE]
-> `HashGen.ps1` has to be in your `Downloads` folder
+![](https://github.com/nohuto/hash-gen/blob/main/images/contextmenu.png?raw=true)
 
-There're 2 valid params which you can set (`Add-CM.ps1` will ask for them):
-- `sleep` (disabled by default means not present, as it is a switch)
-  - If `Y` the file won't close instantly and waits for a specific time till it closes (`seconds`)
-- `seconds` (default of `3`)
-  - Only has a impact, if `sleep` is enabled
+
+`HashGen.ps1` gets used from your `Downloads` folder if present, otherwise `Add-CM.ps1` automatically downloads the latest copy from GitHub.
+
+`Add-CM.ps1` copies `HashGen.ps1` into `%LOCALAPPDATA%\Noverse` and adds a *Hashes* entry for files and folders.  
+Expanding it reveals `All Hashes`, `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `MACTripleDES`, and `RIPEMD160` shortcuts - each launches PowerShell with `-NoExit` and passes the selected algorithm so the console stays open without artificial delays.
 
 ## Uninstallation
 
 Remove the content menu entry and `HashGen` with:
-```ps
-Remove-Item -Path "HKCU:\Software\Classes\*\shell\NV-Hash" -Recurse -Force
-Remove-Item -Path "HKCU:\Software\Classes\Directory\shell\NV-Hash" -Recurse -Force
-Remove-Item -Path "$env:localappdata\Noverse\HashGen.ps1" -Force
+```powershell
+Remove-Item -LiteralPath "HKCU:\Software\Classes\*\shell\Hashes" -Recurse -Force
+Remove-Item -LiteralPath "HKCU:\Software\Classes\Directory\shell\Hashes" -Recurse -Force
+Remove-Item -LiteralPath "HKCU:\Software\Classes\HashGen.ContextMenu" -Recurse -Force
+#Remove-Item -LiteralPath "HKCU:\Software\Classes\*\shell\NV-Hash" -Recurse -Force  # old entry
+#Remove-Item -LiteralPath "HKCU:\Software\Classes\Directory\shell\NV-Hash" -Recurse -Force  # old entry
+Remove-Item -Path "$env:LOCALAPPDATA\Noverse\HashGen.ps1" -Force
 ```
