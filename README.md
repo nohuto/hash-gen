@@ -14,10 +14,6 @@ The purpose of hash values is to provide a cryptographically-secure way to verif
 - [`MACTripleDES`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.mactripledes?view=net-9.0)
 - [`RIPEMD160`](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.ripemd160?view=net-9.0)
 
-Preview (window stays open until you close it):
-
-https://github.com/user-attachments/assets/431b9d0e-c8d1-414d-8eaf-581924cbaa7f
-
 The computed hash depends on the file content, e.g. empty files have the same hash (which means that every change affects the hash - [Avalanche effect](https://en.wikipedia.org/wiki/Avalanche_effect)):
 ```powershell
 # Scenario 1 (no content)
@@ -63,18 +59,7 @@ SHA512("")
 
 ## Installation
 
-`HashGen.ps1` accepts an optional `-Algorithm` parameter (`All`, `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `MACTripleDES`, `RIPEMD160`).  
-By default it runs every available algorithm, but you can target a specific hash when invoking it manually.
-
-`Add-CM.ps1` will add a `Hashes` cascaded option to the context menu of any file/folder (if selecting a folder all files within the folder and every subfolder will get used):
-
-![](https://github.com/nohuto/hash-gen/blob/main/images/contextmenu.png?raw=true)
-
-
-`HashGen.ps1` gets used from your `Downloads` folder if present, otherwise `Add-CM.ps1` automatically downloads the latest copy from GitHub.
-
-`Add-CM.ps1` copies `HashGen.ps1` into `%LOCALAPPDATA%\Noverse` and adds a *Hashes* entry for files and folders.  
-Expanding it reveals `All Hashes`, `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `MACTripleDES`, and `RIPEMD160` shortcuts - each launches PowerShell with `-NoExit` and passes the selected algorithm so the console stays open without artificial delays.
+`HashGen.ps1` accepts an optional `-Algorithm` parameter (`All`, `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `MACTripleDES`, `RIPEMD160`). By default it runs every available algorithm, but you can target a specific hash when invoking it manually. `Add-CM.ps1` will add a `Hashes` cascaded option to the context menu of any file/folder (if selecting a folder all files within the folder and every subfolder will get used). `HashGen.ps1` gets used from your `Downloads` folder if present, otherwise `Add-CM.ps1` automatically downloads the latest copy from GitHub. `Add-CM.ps1` copies `HashGen.ps1` into `%LOCALAPPDATA%\Noverse` and adds a *Hashes* entry for files and folders.
 
 ## Uninstallation
 
